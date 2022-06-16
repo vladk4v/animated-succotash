@@ -50,7 +50,7 @@ public class BooleanSearchEngine implements SearchEngine {
 						if (vocabulary.containsKey(word)) {
 							List<PageEntry> newbie = vocabulary.get(word);
 							newbie.add(newbie.size(), new PageEntry(nameOfFile, pageNumber, counts));
-							newbie.sort(Comparator.reverseOrder());
+							newbie.sort(Comparator.naturalOrder());
 							vocabulary.replace(word, newbie);
 						} else {
 							List<PageEntry> oldie = new ArrayList<>();

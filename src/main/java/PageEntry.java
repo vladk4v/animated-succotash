@@ -38,17 +38,17 @@ public class PageEntry implements Comparable<PageEntry> {
 				if (this.getPage() == o.getPage()) {
 					return 0;
 				} else if (this.getPage() < o.getPage()) {
-					return 1;
-				} else {
 					return -1;
+				} else {
+					return 1;
 				}
 			} else {
 				return this.getPdfName().compareTo(o.getPdfName());
 			}
 		} else if (this.getCount() < o.getCount()) {
-			return -1;
-		} else {
 			return 1;
+		} else {
+			return -1;
 		}
 	}
 }

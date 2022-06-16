@@ -1,6 +1,7 @@
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import org.json.simple.parser.JSONParser;
 
 import java.awt.*;
 import java.io.*;
@@ -9,25 +10,24 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class Main {
 
+	private static final String pathToFiles = "pdfs";
 	private static final int port = 8989;
-	private static final String hostName = "localhost";
 	private static final String fileName = "searchingResults.json";
 
 	public static void main(String[] args) throws Exception {
 
-//		BooleanSearchEngine engine = new BooleanSearchEngine(new File("pdfs"));
-//		System.out.println(engine.search("бизнес"));
-
-		String pathToFiles = "pdfs";
-		serverSearch(pathToFiles);
+		BooleanSearchEngine engine = new BooleanSearchEngine(new File("pdfs"));
+		System.out.println(engine.search("бизнес"));
 
 		// здесь создайте сервер, который отвечал бы на нужные запросы
 		// слушать он должен порт 8989
 		// отвечать на запросы /{word} -> возвращённое значение метода search(word) в JSON-формате
 
+		serverSearch(pathToFiles);
 	}
 
 	private static void serverSearch(String pathToFiles) throws Exception {
@@ -35,48 +35,24 @@ public class Main {
 		try (ServerSocket serverSocket = new ServerSocket(port)) {
 
 			while (true) {
-
-				//client
-				try (Socket client = new Socket(hostName, port);
-					 BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-					 PrintWriter out = new PrintWriter(client.getOutputStream(), true)) {
-
-					System.out.println("Hello");
-					System.out.println("Enter a word:");
-					String word;
-
-					while ((word = reader.readLine()).equals("")) {
-						System.out.println("Enter a word:");
-					}
-
-					if (word.equals(".")) {
-						System.out.println("You interrupted program");
-						break;
-					} else {
-						out.println(word);
-					}
-
-				} catch (IOException ex) {
-					System.out.println("Server was closed");
-				}
-
-				//server
 				try (Socket socket = serverSocket.accept();
 					 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 					 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-					String wordToFind = in.readLine();
-					System.out.println("You are looking for word: " + wordToFind);
-					System.out.println("Searching results:");
+					out.println("Write a word: ");
 
-					//searching
-					programSearching(pathToFiles, wordToFind);
+					String wordToFind;
+					while ((wordToFind = in.readLine()).matches("[^[:alpha:]]")) {
+						out.println("Write a word: ");
+					}
 
-					System.out.println("Good bye");
+					out.println(programSearching(pathToFiles, wordToFind));
+					out.println("Goodbye");
 					break;
 
-				} catch (IOException ex) {
+				} catch (IOException | NoSuchElementException ex) {
 					ex.printStackTrace();
+					break;
 				}
 			}
 		} catch (IOException ex) {
@@ -84,12 +60,12 @@ public class Main {
 		}
 	}
 
-	private static void programSearching(String pathToFiles, String wordToFind) throws Exception {
+	private static Object programSearching(String pathToFiles, String wordToFind) throws Exception {
 		BooleanSearchEngine booleanSearchEngine = new BooleanSearchEngine(new File(pathToFiles));
 		List<PageEntry> results = booleanSearchEngine.search(wordToFind);
-		System.out.println(results);
-		writeString(listToJson(results));
-		openFile();
+		writeFileResults(listToJson(results));
+		openFileResults();
+		return showStringResults();
 	}
 
 	private static <T> String listToJson(List<PageEntry> list) {
@@ -102,7 +78,7 @@ public class Main {
 		return gson.toJson(list, listType);
 	}
 
-	private static void writeString(String json) {
+	private static void writeFileResults(String json) {
 		try (FileWriter writer = new FileWriter(fileName)) {
 			writer.write(json);
 			writer.flush();
@@ -111,7 +87,14 @@ public class Main {
 		}
 	}
 
-	private static void openFile() throws Exception {
+	private static Object showStringResults() throws Exception {
+		try (FileReader reader = new FileReader(fileName)) {
+			JSONParser jsonParser = new JSONParser();
+			return jsonParser.parse(reader);
+		}
+	}
+
+	private static void openFileResults() throws Exception {
 		File file = new File(fileName);
 		if (!Desktop.isDesktopSupported()) {
 			System.out.println("Desktop is not supported");
