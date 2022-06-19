@@ -1,9 +1,7 @@
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import org.json.simple.parser.JSONParser;
 
-import java.awt.*;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.net.ServerSocket;
@@ -63,19 +61,21 @@ public class Main {
 	private static Object programSearching(String pathToFiles, String wordToFind) throws Exception {
 		BooleanSearchEngine booleanSearchEngine = new BooleanSearchEngine(new File(pathToFiles));
 		List<PageEntry> results = booleanSearchEngine.search(wordToFind);
-		writeFileResults(listToJson(results));
-		openFileResults();
-		return showStringResults();
+		String stringResults = listToJson(results);
+		writeFileResults(stringResults);
+		return stringResults;
 	}
 
-	private static <T> String listToJson(List<PageEntry> list) {
+	private static String listToJson(List<PageEntry> list) {
 		GsonBuilder builder = new GsonBuilder();
 		Gson gson = builder
 				.setPrettyPrinting()
 				.create();
-		Type listType = new TypeToken<List<T>>() {
+		Type listType = new TypeToken<List<PageEntry>>() {
 		}.getType();
-		return gson.toJson(list, listType);
+		String showResults = gson.toJson(list, listType);
+		System.out.println(showResults);
+		return showResults;
 	}
 
 	private static void writeFileResults(String json) {
@@ -84,24 +84,6 @@ public class Main {
 			writer.flush();
 		} catch (IOException ex) {
 			ex.printStackTrace();
-		}
-	}
-
-	private static Object showStringResults() throws Exception {
-		try (FileReader reader = new FileReader(fileName)) {
-			JSONParser jsonParser = new JSONParser();
-			return jsonParser.parse(reader);
-		}
-	}
-
-	private static void openFileResults() throws Exception {
-		File file = new File(fileName);
-		if (!Desktop.isDesktopSupported()) {
-			System.out.println("Desktop is not supported");
-		}
-		Desktop desktop = Desktop.getDesktop();
-		if (file.exists()) {
-			desktop.open(file);
 		}
 	}
 
